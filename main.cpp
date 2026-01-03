@@ -32,6 +32,8 @@ struct win32_window_dimension {
 global_variable bool GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackbuffer;
 
+
+
 win32_window_dimension Win32GetWindowDimension(HWND Window) {
     win32_window_dimension Result;
     
@@ -44,19 +46,70 @@ win32_window_dimension Win32GetWindowDimension(HWND Window) {
 }
 
 internal void
-DrawRectangle(win32_offscreen_buffer* Buffer, int MinX, int MinY, int MaxX, int MaxY, uint32 Color) {
+DrawRectangle(win32_offscreen_buffer* Buffer, int MinX, int MinY, int MaxX, int MaxY, uint32 Color)
+{
     if (MinX < 0) MinX = 0;
     if (MinY < 0) MinY = 0;
     if (MaxX > Buffer->Width) MaxX = Buffer->Width;
     if (MaxY > Buffer->Height) MaxY = Buffer->Height;
     
-    uint8* Row = ((uint8*)Buffer->Memory + MinX * Buffer->BytesPerPixel + MinY * Buffer->Pitch);
-    for (int Y = MinY; Y < MaxY; ++Y) {
-        uint32* Pixel = (uint32*)Row + MinX;
-        for (int X = MinX; X < MaxX; ++X) {
-            *Pixel++ = Color;
+    uint8* Row = (uint8*)Buffer->Memory + (MinY * Buffer->Pitch) + (MinX * Buffer->BytesPerPixel);
+    
+    for (int Y = MinY; Y < MaxY; Y += 1) {
+        uint32* Pixel = (uint32*)Row;
+        
+        for (int X = MinX; X < MaxX; X += 1) {
+            *Pixel = Color;
+            Pixel += 1;
         }
+        
         Row += Buffer->Pitch;
+    }
+}
+
+int grid[12][20] = {
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,2,2,2,2,2,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,0,1},
+    {1,0,0,0,4,4,4,4,4,4,4,4,4,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,2,2,2,2,2,2,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+};
+
+internal void 
+DrawTileMap(win32_offscreen_buffer* Buffer, int grid[12][20]) {
+    uint32 c1 = 0x00202020;
+    uint32 c2 = 0x00967969;
+    uint32 c3 = 0x0022DDAA;
+    uint32 c4 = 0x00FF3311;
+    uint32 c5 = 0x00DDDDAA;
+    
+    int tileSize = 64; // this needs to be adjusted more, because it feels too close for me. had to multiply 32 * 2 to get it to get the full length of window
+    
+    for (int row = 0; row < 12; row += 1) {
+        for (int col = 0; col < 20; col += 1) {
+            int value = grid[row][col];                     // get the value of the map spot
+            
+            uint32 color;          
+            if (value == 0) color = c1;
+            else if (value == 1) color = c2;
+            else if (value == 2) color = c3;
+            else if (value == 3) color = c4;
+            else if (value == 4) color = c5;
+            
+            int left = col * tileSize;                      // create the coordinates 
+            int top = row * tileSize;                            
+            int right = left + tileSize;
+            int bottom = top + tileSize;                         
+            
+            DrawRectangle(Buffer, left, top, right, bottom, color); // create the Rectangle
+        }
     }
 }
 
@@ -99,6 +152,7 @@ Win32ResizeDIBSection(win32_offscreen_buffer* Buffer, int Width, int Height) {
     Buffer->Height = Height;
     
     int BytesPerPixel = 4;
+    Buffer->BytesPerPixel = BytesPerPixel;
     
     Buffer->Info.bmiHeader.biSize = sizeof(Buffer->Info.bmiHeader);
     Buffer->Info.bmiHeader.biWidth = Buffer->Width;
@@ -187,7 +241,7 @@ WinMain(HINSTANCE Instance,
         int ShowCode) {
     WNDCLASS WindowClass = {};
     
-    Win32ResizeDIBSection(&GlobalBackbuffer, 1280, 720);
+    Win32ResizeDIBSection(&GlobalBackbuffer, 1280, 768); // 1280/32 = 40, 720/32 = 25 
     
     // TODO: Check if HREDRAW/VREDRAW/OWNDC still matter
     WindowClass.lpfnWndProc = Win32MainWindowCallback;
@@ -214,8 +268,8 @@ WinMain(HINSTANCE Instance,
             
             HDC DeviceContext = GetDC(Window);
             
-            int XOffset = 0;
-            int YOffset = 0;
+            
+            
             
             GlobalRunning = true;
             while (GlobalRunning) {
@@ -229,15 +283,19 @@ WinMain(HINSTANCE Instance,
                     DispatchMessageA(&Message);
                 }
                 
+                // ProcessInput
                 
+                // Game Rendering
                 ClearBackbuffer(&GlobalBackbuffer, 0x00202020);
-                DrawRectangle(&GlobalBackbuffer, 50, 50, 100, 100, 0x00FFDD11);
+                DrawTileMap(&GlobalBackbuffer, grid);
+                
                 
                 HDC DeviceContext = GetDC(Window);
                 win32_window_dimension Dimension = Win32GetWindowDimension(Window);
                 Win32DisplayBufferInWindow(DeviceContext, Dimension.Width, Dimension.Height, GlobalBackbuffer);
                 ReleaseDC(Window, DeviceContext);
                 
+                // HUD
                 Win32DrawTextOverlayBottomLeft(Window, 20, 20, "START MENU", RGB(255, 255, 0));
                 
             }
