@@ -61,11 +61,22 @@ DrawRectangle(win32_offscreen_buffer* Buffer, int MinX, int MinY, int MaxX, int 
 }
 
 internal void
-Win32DrawTextOverlay(HWND Window, int X, int Y, const char* Text, COLORREF Color) {
+Win32DrawTextOverlayBottomLeft(HWND Window, int MarginX, int MarginY, const char* Text, COLORREF Color)
+{
     HDC DC = GetDC(Window);
     
     SetBkMode(DC, TRANSPARENT);
     SetTextColor(DC, Color);
+    
+    RECT Client;
+    GetClientRect(Window, &Client);
+    
+    SIZE TextSize;
+    GetTextExtentPoint32A(DC, Text, lstrlenA(Text), &TextSize);
+    
+    int X = MarginX;
+    int Y = (Client.bottom - MarginY) - TextSize.cy;
+    if (Y < 0) Y = 0;
     
     TextOutA(DC, X, Y, Text, lstrlenA(Text));
     
@@ -227,7 +238,7 @@ WinMain(HINSTANCE Instance,
                 Win32DisplayBufferInWindow(DeviceContext, Dimension.Width, Dimension.Height, GlobalBackbuffer);
                 ReleaseDC(Window, DeviceContext);
                 
-                Win32DrawTextOverlay(Window, 20, 20, "START MENU", RGB(255, 255, 0));
+                Win32DrawTextOverlayBottomLeft(Window, 20, 20, "START MENU", RGB(255, 255, 0));
                 
             }
         }
