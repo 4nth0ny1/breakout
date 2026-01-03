@@ -29,9 +29,17 @@ struct win32_window_dimension {
     int Height;
 };
 
+struct player {
+    int X;
+    int Y;
+    int Width;
+    int Height;
+    uint32 Color;
+};
+
 global_variable bool GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackbuffer;
-
+global_variable player GlobalPlayer;
 
 
 win32_window_dimension Win32GetWindowDimension(HWND Window) {
@@ -113,6 +121,15 @@ DrawTileMap(win32_offscreen_buffer* Buffer, int grid[12][20]) {
     }
 }
 
+internal void 
+DrawPlayer(win32_offscreen_buffer* Buffer, player* p) {
+    
+    int right = p->X + p->Width;
+    int bottom = p->Y + p->Height;
+    
+    DrawRectangle(Buffer, p->X, p->Y, right, bottom, p->Color);
+}
+
 internal void
 Win32DrawTextOverlayBottomLeft(HWND Window, int MarginX, int MarginY, const char* Text, COLORREF Color)
 {
@@ -134,6 +151,29 @@ Win32DrawTextOverlayBottomLeft(HWND Window, int MarginX, int MarginY, const char
     TextOutA(DC, X, Y, Text, lstrlenA(Text));
     
     ReleaseDC(Window, DC);
+}
+
+
+internal void 
+ProcessPlayerInput() {
+    bool LeftKeyIsDown;
+    bool RightKeyIsDown;
+    bool LeftKeyWasDown;
+    bool RightKeyWasDown;
+    
+    LeftKeyIsDown = (GetAsyncKeyState(VK_LEFT) & 0x8000) || (GetAsyncKeyState('A') & 0x8000);
+    RightKeyIsDown = (GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000);
+    
+    if (LeftKeyIsDown) {
+        GlobalPlayer.X--;
+    }
+    if (RightKeyIsDown) {
+        GlobalPlayer.X++;
+    }
+    
+    LeftKeyWasDown = LeftKeyIsDown;
+    RightKeyWasDown = RightKeyIsDown;
+    
 }
 
 internal void
@@ -268,8 +308,11 @@ WinMain(HINSTANCE Instance,
             
             HDC DeviceContext = GetDC(Window);
             
-            
-            
+            GlobalPlayer.X = 600;
+            GlobalPlayer.Y = 600;
+            GlobalPlayer.Width = 64;
+            GlobalPlayer.Height = 64;
+            GlobalPlayer.Color = 0x00FF69B4;
             
             GlobalRunning = true;
             while (GlobalRunning) {
@@ -284,11 +327,12 @@ WinMain(HINSTANCE Instance,
                 }
                 
                 // ProcessInput
+                ProcessPlayerInput();
                 
                 // Game Rendering
                 ClearBackbuffer(&GlobalBackbuffer, 0x00202020);
                 DrawTileMap(&GlobalBackbuffer, grid);
-                
+                DrawPlayer(&GlobalBackbuffer, &GlobalPlayer);
                 
                 HDC DeviceContext = GetDC(Window);
                 win32_window_dimension Dimension = Win32GetWindowDimension(Window);
