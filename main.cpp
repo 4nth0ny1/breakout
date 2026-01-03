@@ -44,43 +44,11 @@ win32_window_dimension Win32GetWindowDimension(HWND Window) {
 }
 
 internal void
-RenderWeirdGradient(win32_offscreen_buffer Buffer, int BlueOffset, int GreenOffset) {
-    
-    uint8* Row = (uint8*)Buffer.Memory;
-    for (int Y = 0;
-         Y < Buffer.Height;
-         ++Y) {
-        uint32* Pixel = (uint32*)Row;
-        for (int X = 0;
-             X < Buffer.Width;
-             ++X) {
-            uint8 Blue = (X + BlueOffset);
-            uint8 Green = (Y + GreenOffset);
-            
-            *Pixel++ = ((Green << 8) | Blue);
-        }
-        
-        Row += Buffer.Pitch;
-    }
-}
-
-internal void
 DrawRectangle(win32_offscreen_buffer* Buffer, int MinX, int MinY, int MaxX, int MaxY, uint32 Color) {
-    if (MinX < 0) {
-        MinX = 0;
-    }
-    
-    if (MinY < 0) {
-        MinY = 0;
-    }
-    
-    if (MaxX > Buffer->Width) {
-        MaxX = Buffer->Width;
-    }
-    
-    if (MaxY > Buffer->Height) {
-        MaxY = Buffer->Height;
-    }
+    if (MinX < 0) MinX = 0;
+    if (MinY < 0) MinY = 0;
+    if (MaxX > Buffer->Width) MaxX = Buffer->Width;
+    if (MaxY > Buffer->Height) MaxY = Buffer->Height;
     
     uint8* Row = ((uint8*)Buffer->Memory + MinX * Buffer->BytesPerPixel + MinY * Buffer->Pitch);
     for (int Y = MinY; Y < MaxY; ++Y) {
@@ -90,6 +58,18 @@ DrawRectangle(win32_offscreen_buffer* Buffer, int MinX, int MinY, int MaxX, int 
         }
         Row += Buffer->Pitch;
     }
+}
+
+internal void
+Win32DrawTextOverlay(HWND Window, int X, int Y, const char* Text, COLORREF Color) {
+    HDC DC = GetDC(Window);
+    
+    SetBkMode(DC, TRANSPARENT);
+    SetTextColor(DC, Color);
+    
+    TextOutA(DC, X, Y, Text, lstrlenA(Text));
+    
+    ReleaseDC(Window, DC);
 }
 
 internal void
@@ -120,7 +100,6 @@ Win32ResizeDIBSection(win32_offscreen_buffer* Buffer, int Width, int Height) {
     Buffer->Memory = VirtualAlloc(0, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
     Buffer->Pitch = Width * BytesPerPixel;
     
-    // TODO: Probably clear this to black
 }
 
 internal void
@@ -241,14 +220,15 @@ WinMain(HINSTANCE Instance,
                 
                 
                 ClearBackbuffer(&GlobalBackbuffer, 0x00202020);
+                DrawRectangle(&GlobalBackbuffer, 50, 50, 100, 100, 0x00FFDD11);
                 
                 HDC DeviceContext = GetDC(Window);
                 win32_window_dimension Dimension = Win32GetWindowDimension(Window);
                 Win32DisplayBufferInWindow(DeviceContext, Dimension.Width, Dimension.Height, GlobalBackbuffer);
                 ReleaseDC(Window, DeviceContext);
                 
-                ++XOffset;
-                YOffset += 2;
+                Win32DrawTextOverlay(Window, 20, 20, "START MENU", RGB(255, 255, 0));
+                
             }
         }
         else {
