@@ -1,4 +1,4 @@
 #breakout notes
 
 - [x] - window, exits cleanly
-- [] - create backbuffer and clear funcs
+- [x] - create backbuffer and clear funcs
