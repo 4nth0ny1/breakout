@@ -165,10 +165,10 @@ ProcessPlayerInput() {
     RightKeyIsDown = (GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000);
     
     if (LeftKeyIsDown) {
-        GlobalPlayer.X--;
+        if (GlobalPlayer.X > 64) GlobalPlayer.X--;
     }
     if (RightKeyIsDown) {
-        GlobalPlayer.X++;
+        if (GlobalPlayer.X < 1152) GlobalPlayer.X++;
     }
     
     LeftKeyWasDown = LeftKeyIsDown;
