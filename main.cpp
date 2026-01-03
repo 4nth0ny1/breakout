@@ -3,6 +3,11 @@
 
 bool GlobalRunning;
 
+// ClearBackbuffer(Buffer* buffer, color);
+// DisplayBackbuffer(Buffer* buffer, );
+// ResizeBackbuffer();
+
+
 LRESULT CALLBACK
 Win32MainWindowCallback(HWND Window,
                         UINT Message,
@@ -25,6 +30,37 @@ Win32MainWindowCallback(HWND Window,
         {
             GlobalRunning = false;
         } break;
+        
+        case WM_PAINT:
+        {
+            PAINTSTRUCT paint;
+            HDC dc = BeginPaint(Window, &paint);
+            
+            RECT rc;
+            rc.left   = 10;
+            rc.top    = 10;
+            rc.right  = 200;
+            rc.bottom = 100;
+            
+            // Use wide string + const-correct type
+            LPCWSTR text = L"Hello, Win32 DrawText!";
+            
+            SetBkMode(dc, TRANSPARENT);
+            SetTextColor(dc, RGB(100, 100, 255));
+            
+            DrawTextW(
+                      dc,
+                      text,
+                      -1,
+                      &rc,
+                      DT_SINGLELINE | DT_CENTER | DT_VCENTER
+                      );
+            
+            EndPaint(Window, &paint);
+        }
+        break;
+        
+        
         default:
         {
             Result = DefWindowProc(Window, Message, WParam, LParam);
@@ -83,6 +119,9 @@ WinMain(_In_ HINSTANCE Instance,
                     DispatchMessageA(&Message);
                 }
             }
+            
+            // render 
+            
             
         }
     }
