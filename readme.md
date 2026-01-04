@@ -6,3 +6,4 @@
 - [x] - Tilemap with multi-colored enemies
 - [x] - Added Player and Movement
 - [x] - Added simple player collision with walls
+- [x] - Added ball and collision with walls

@@ -37,10 +37,24 @@ struct player {
     uint32 Color;
 };
 
+
+struct ball {
+    float X;
+    float Y;
+    float dX;
+    float dY;
+    int Width;
+    int Height;
+    uint32 Color;
+    float Speed;
+};
+
 global_variable bool GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackbuffer;
 global_variable player GlobalPlayer;
-
+global_variable ball GlobalBall;
+global_variable bool VerticalDirection;
+global_variable bool HorizontalDirection;
 
 win32_window_dimension Win32GetWindowDimension(HWND Window) {
     win32_window_dimension Result;
@@ -130,6 +144,15 @@ DrawPlayer(win32_offscreen_buffer* Buffer, player* p) {
     DrawRectangle(Buffer, p->X, p->Y, right, bottom, p->Color);
 }
 
+internal void 
+DrawBall(win32_offscreen_buffer* Buffer, ball* b) {
+    
+    int right = b->X + b->Width;
+    int bottom = b->Y + b->Height;
+    
+    DrawRectangle(Buffer, b->X, b->Y, right, bottom, b->Color);
+}
+
 internal void
 Win32DrawTextOverlayBottomLeft(HWND Window, int MarginX, int MarginY, const char* Text, COLORREF Color)
 {
@@ -153,6 +176,50 @@ Win32DrawTextOverlayBottomLeft(HWND Window, int MarginX, int MarginY, const char
     ReleaseDC(Window, DC);
 }
 
+
+internal void 
+UpdateBall() {
+    
+    // up & left
+    if (VerticalDirection == 0 && HorizontalDirection == 0){
+        GlobalBall.Y--;
+        GlobalBall.X--;
+    }
+    
+    // down & right 
+    if (VerticalDirection == 1 && HorizontalDirection == 1){
+        GlobalBall.Y++;
+        GlobalBall.X++;
+    }
+    // up & right
+    if (VerticalDirection == 0 && HorizontalDirection == 1) {
+        GlobalBall.Y--;
+        GlobalBall.X++;
+    }
+    
+    // down & left
+    if (VerticalDirection == 1 && HorizontalDirection == 0) {
+        GlobalBall.Y++;
+        GlobalBall.X--;
+    }
+    
+    if (GlobalBall.X == 64.0) {
+        HorizontalDirection = 1;
+    }
+    
+    if (GlobalBall.X == 1184.0) {
+        HorizontalDirection = 0;
+    }
+    
+    if (GlobalBall.Y == 64.0) {
+        VerticalDirection = 1;
+    }
+    
+    if (GlobalBall.Y == 672.0) {
+        VerticalDirection = 0;
+    }
+    
+}
 
 internal void 
 ProcessPlayerInput() {
@@ -314,6 +381,18 @@ WinMain(HINSTANCE Instance,
             GlobalPlayer.Height = 64;
             GlobalPlayer.Color = 0x00FF69B4;
             
+            GlobalBall.X = 450;
+            GlobalBall.Y = 550;
+            GlobalBall.dX = 2;
+            GlobalBall.dY = 2;
+            GlobalBall.Width = 32.0;
+            GlobalBall.Height = 32.0;
+            GlobalBall.Color = 0x00114455;
+            GlobalBall.Speed = 400.0;
+            
+            VerticalDirection = 0; 
+            HorizontalDirection = 0;
+            
             GlobalRunning = true;
             while (GlobalRunning) {
                 MSG Message;
@@ -328,11 +407,13 @@ WinMain(HINSTANCE Instance,
                 
                 // ProcessInput
                 ProcessPlayerInput();
+                UpdateBall();
                 
                 // Game Rendering
                 ClearBackbuffer(&GlobalBackbuffer, 0x00202020);
                 DrawTileMap(&GlobalBackbuffer, grid);
                 DrawPlayer(&GlobalBackbuffer, &GlobalPlayer);
+                DrawBall(&GlobalBackbuffer, &GlobalBall);
                 
                 HDC DeviceContext = GetDC(Window);
                 win32_window_dimension Dimension = Win32GetWindowDimension(Window);
