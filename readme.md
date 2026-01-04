@@ -10,6 +10,3 @@
 - [x] - Added collisions with paddle
 - [x] - Added Blocks and collisions
 - [x] - Splash Screen and Game Over States
-- [] - Scoreboard and Lives
-- [] - Restart
-- [] - Adjust the walls to look thinner or change the color to look better. 
