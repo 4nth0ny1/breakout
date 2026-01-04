@@ -5,6 +5,13 @@
 #define local_persist static 
 #define global_variable static
 
+#define BRICK_ROWS 5
+#define BRICK_COLS 18
+
+#define BRICK_TILE 64
+#define BRICK_OFFSET_X 64
+#define BRICK_OFFSET_Y 64
+
 typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
@@ -36,7 +43,6 @@ struct player {
     int Height;
     uint32 Color;
 };
-
 
 struct ball {
     float X;
@@ -92,10 +98,10 @@ DrawRectangle(win32_offscreen_buffer* Buffer, int MinX, int MinY, int MaxX, int 
 int grid[12][20] = {
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
     {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,2,2,2,2,2,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,3,3,3,3,3,3,3,3,0,0,0,0,0,0,1},
-    {1,0,0,0,4,4,4,4,4,4,4,4,4,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,2,2,2,2,2,2,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
@@ -103,6 +109,44 @@ int grid[12][20] = {
     {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
     {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 };
+
+int BrickGrid[5][18] = {
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+    {3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3},
+};
+
+internal void 
+DrawBricks(win32_offscreen_buffer* Buffer, int BrickGrid[5][18]) {
+    uint32 c1 = 0x0022DDAA;
+    uint32 c2 = 0x00FF3311;
+    uint32 c3 = 0x00DDDDAA;
+    
+    int tileSize = 64;
+    
+    for(int BrickRow = 0; BrickRow < 5; BrickRow += 1) {
+        for (int BrickCol = 0; BrickCol < 18; BrickCol += 1) {
+            int value = BrickGrid[BrickRow][BrickCol];
+            if (value == 0) {
+                continue;
+            }
+            uint32 color;
+            if (value == 1) color = c1;
+            else if (value == 2) color = c2;
+            else if (value == 3) color = c3;
+            int padding = 2;
+            
+            int left   = BrickCol * tileSize + 64 + padding;
+            int top    = BrickRow * tileSize + 64 + padding;
+            int right  = left + tileSize - padding * 2;
+            int bottom = top  + tileSize - padding * 2;
+            
+            DrawRectangle(Buffer, left, top, right, bottom, color);
+        }
+    }
+}
 
 internal void 
 DrawTileMap(win32_offscreen_buffer* Buffer, int grid[12][20]) {
@@ -154,8 +198,7 @@ DrawBall(win32_offscreen_buffer* Buffer, ball* b) {
 }
 
 internal void
-Win32DrawTextOverlayBottomLeft(HWND Window, int MarginX, int MarginY, const char* Text, COLORREF Color)
-{
+Win32DrawTextOverlayBottomLeft(HWND Window, int MarginX, int MarginY, const char* Text, COLORREF Color) {
     HDC DC = GetDC(Window);
     
     SetBkMode(DC, TRANSPARENT);
@@ -174,6 +217,74 @@ Win32DrawTextOverlayBottomLeft(HWND Window, int MarginX, int MarginY, const char
     TextOutA(DC, X, Y, Text, lstrlenA(Text));
     
     ReleaseDC(Window, DC);
+}
+
+internal bool
+PointInRect(float px, float py, int left, int top, int right, int bottom)
+{
+    return (px >= (float)left && px < (float)right &&
+            py >= (float)top  && py < (float)bottom);
+}
+
+internal void
+BallVsBricks(void)
+{
+    // Ball bounds
+    float ballLeft   = GlobalBall.X;
+    float ballRight  = GlobalBall.X + (float)GlobalBall.Width;
+    float ballTop    = GlobalBall.Y;
+    float ballBottom = GlobalBall.Y + (float)GlobalBall.Height;
+    
+    // We will test a few sample points on the ball.
+    // (This avoids scanning all bricks.)
+    float testX[2] = { ballLeft, ballRight };
+    float testY[2] = { ballTop,  ballBottom };
+    
+    for (int yi = 0; yi < 2; yi += 1)
+    {
+        for (int xi = 0; xi < 2; xi += 1)
+        {
+            float px = testX[xi];
+            float py = testY[yi];
+            
+            // Convert pixel -> brick cell
+            int col = (int)((px - BRICK_OFFSET_X) / (float)BRICK_TILE);
+            int row = (int)((py - BRICK_OFFSET_Y) / (float)BRICK_TILE);
+            
+            if (row < 0 || row >= BRICK_ROWS) continue;
+            if (col < 0 || col >= BRICK_COLS) continue;
+            
+            if (BrickGrid[row][col] == 0) continue; // empty cell
+            
+            // Compute the brick rect (MUST match your DrawBricks math)
+            int left   = col * BRICK_TILE + BRICK_OFFSET_X;
+            int top    = row * BRICK_TILE + BRICK_OFFSET_Y;
+            int right  = left + BRICK_TILE;
+            int bottom = top  + BRICK_TILE;
+            
+            // Confirm overlap (optional but good)
+            bool overlap =
+            (ballRight  > (float)left) &&
+            (ballLeft   < (float)right) &&
+            (ballBottom > (float)top) &&
+            (ballTop    < (float)bottom);
+            
+            if (overlap)
+            {
+                // Remove / damage brick
+                BrickGrid[row][col] = 0;
+                
+                // Reflect ball (simple version: flip vertical)
+                VerticalDirection = !VerticalDirection;
+                
+                // Push ball out a bit so it doesn't "stick"
+                if (VerticalDirection == 0) { GlobalBall.Y = (float)top - (float)GlobalBall.Height; }
+                else                        { GlobalBall.Y = (float)bottom; }
+                
+                return; // only one brick per frame
+            }
+        }
+    }
 }
 
 
@@ -206,20 +317,33 @@ UpdateBall() {
         GlobalBall.X--;
     }
     
-    if (GlobalBall.X == 64.0) {
-        HorizontalDirection = 1;
+    float MinX = 64.0f;
+    float MaxX = 1184.0f;
+    float MinY = 64.0f;
+    float MaxY = 672.0f;
+    
+    // Left wall
+    if (GlobalBall.X <= MinX) {
+        GlobalBall.X = MinX;          // correct position
+        HorizontalDirection = 1;      // go right
     }
     
-    if (GlobalBall.X == 1184.0) {
-        HorizontalDirection = 0;
+    // Right wall
+    if (GlobalBall.X >= MaxX) {
+        GlobalBall.X = MaxX;          // correct position
+        HorizontalDirection = 0;      // go left
     }
     
-    if (GlobalBall.Y == 64.0) {
-        VerticalDirection = 1;
+    // Top wall
+    if (GlobalBall.Y <= MinY) {
+        GlobalBall.Y = MinY;          // correct position
+        VerticalDirection = 1;        // go down
     }
     
-    if (GlobalBall.Y == 672.0) {
-        VerticalDirection = 0;
+    // Bottom wall
+    if (GlobalBall.Y >= MaxY) {
+        GlobalBall.Y = MaxY;          // correct position
+        VerticalDirection = 0;        // go up
     }
     
     // ball rect (current)
@@ -248,6 +372,9 @@ UpdateBall() {
         VerticalDirection = 0;
         GlobalBall.Y = PlayerMinY - GlobalBall.Height;
     }
+    
+    BallVsBricks();
+    
     
 }
 
@@ -378,7 +505,7 @@ WinMain(HINSTANCE Instance,
         int ShowCode) {
     WNDCLASS WindowClass = {};
     
-    Win32ResizeDIBSection(&GlobalBackbuffer, 1280, 768); // 1280/32 = 40, 720/32 = 25 
+    Win32ResizeDIBSection(&GlobalBackbuffer, 1280, 768); 
     
     // TODO: Check if HREDRAW/VREDRAW/OWNDC still matter
     WindowClass.lpfnWndProc = Win32MainWindowCallback;
@@ -442,6 +569,7 @@ WinMain(HINSTANCE Instance,
                 // Game Rendering
                 ClearBackbuffer(&GlobalBackbuffer, 0x00202020);
                 DrawTileMap(&GlobalBackbuffer, grid);
+                DrawBricks(&GlobalBackbuffer, BrickGrid);
                 DrawPlayer(&GlobalBackbuffer, &GlobalPlayer);
                 DrawBall(&GlobalBackbuffer, &GlobalBall);
                 
