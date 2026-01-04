@@ -180,6 +180,9 @@ Win32DrawTextOverlayBottomLeft(HWND Window, int MarginX, int MarginY, const char
 internal void 
 UpdateBall() {
     
+    float PrevX = GlobalBall.X;
+    float PrevY = GlobalBall.Y;
+    
     // up & left
     if (VerticalDirection == 0 && HorizontalDirection == 0){
         GlobalBall.Y--;
@@ -217,6 +220,33 @@ UpdateBall() {
     
     if (GlobalBall.Y == 672.0) {
         VerticalDirection = 0;
+    }
+    
+    // ball rect (current)
+    float BallMinX = GlobalBall.X;
+    float BallMaxX = GlobalBall.X + GlobalBall.Width;
+    float BallMinY = GlobalBall.Y;
+    float BallMaxY = GlobalBall.Y + GlobalBall.Height;
+    
+    // ball rect (previous)
+    float PrevBallMaxY = PrevY + GlobalBall.Height;
+    
+    // player rect
+    float PlayerMinX = (float)GlobalPlayer.X;
+    float PlayerMaxX = PlayerMinX + GlobalPlayer.Width;
+    float PlayerMinY = (float)GlobalPlayer.Y;
+    
+    bool OverlapX =
+    (BallMaxX > PlayerMinX) &&
+    (BallMinX < PlayerMaxX);
+    
+    bool CrossedTop =
+    (PrevBallMaxY <= PlayerMinY) &&
+    (BallMaxY >= PlayerMinY);
+    
+    if (OverlapX && CrossedTop && VerticalDirection == 1) {
+        VerticalDirection = 0;
+        GlobalBall.Y = PlayerMinY - GlobalBall.Height;
     }
     
 }
