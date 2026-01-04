@@ -55,12 +55,19 @@ struct ball {
     float Speed;
 };
 
+enum game_state {
+    SPLASH_SCREEN,
+    GAME,
+    GAME_OVER
+};
+
 global_variable bool GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackbuffer;
 global_variable player GlobalPlayer;
 global_variable ball GlobalBall;
 global_variable bool VerticalDirection;
 global_variable bool HorizontalDirection;
+global_variable game_state GlobalGameStateEnum = SPLASH_SCREEN;
 
 win32_window_dimension Win32GetWindowDimension(HWND Window) {
     win32_window_dimension Result;
@@ -382,21 +389,47 @@ internal void
 ProcessPlayerInput() {
     bool LeftKeyIsDown;
     bool RightKeyIsDown;
+    bool ReturnKeyIsDown;
     bool LeftKeyWasDown;
     bool RightKeyWasDown;
-    
-    LeftKeyIsDown = (GetAsyncKeyState(VK_LEFT) & 0x8000) || (GetAsyncKeyState('A') & 0x8000);
-    RightKeyIsDown = (GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000);
-    
-    if (LeftKeyIsDown) {
-        if (GlobalPlayer.X > 64) GlobalPlayer.X--;
+    bool ReturnKeyWasDown;
+
+    switch (GlobalGameStateEnum) {
+        case(SPLASH_SCREEN):
+            ReturnKeyIsDown = (GetAsyncKeyState(VK_RETURN) & 0x8000);
+
+            if (ReturnKeyIsDown) {
+                GlobalGameStateEnum = GAME;
+            }
+        break;
+        case(GAME):
+
+
+            LeftKeyIsDown = (GetAsyncKeyState(VK_LEFT) & 0x8000) || (GetAsyncKeyState('A') & 0x8000);
+            RightKeyIsDown = (GetAsyncKeyState(VK_RIGHT) & 0x8000) || (GetAsyncKeyState('D') & 0x8000);
+
+            if (LeftKeyIsDown) {
+                if (GlobalPlayer.X > 64) GlobalPlayer.X--;
+            }
+            if (RightKeyIsDown) {
+                if (GlobalPlayer.X < 1152) GlobalPlayer.X++;
+            }
+
+            LeftKeyWasDown = LeftKeyIsDown;
+            RightKeyWasDown = RightKeyIsDown;
+
+            break;
+        case(GAME_OVER):
+            ReturnKeyIsDown = (GetAsyncKeyState(VK_RETURN) & 0x8000);
+
+            if (ReturnKeyIsDown) {
+                GlobalGameStateEnum = GAME;
+            }
+            break;
+        default:
+            break;
     }
-    if (RightKeyIsDown) {
-        if (GlobalPlayer.X < 1152) GlobalPlayer.X++;
-    }
-    
-    LeftKeyWasDown = LeftKeyIsDown;
-    RightKeyWasDown = RightKeyIsDown;
+
     
 }
 
@@ -567,11 +600,25 @@ WinMain(HINSTANCE Instance,
                 UpdateBall();
                 
                 // Game Rendering
-                ClearBackbuffer(&GlobalBackbuffer, 0x00202020);
-                DrawTileMap(&GlobalBackbuffer, grid);
-                DrawBricks(&GlobalBackbuffer, BrickGrid);
-                DrawPlayer(&GlobalBackbuffer, &GlobalPlayer);
-                DrawBall(&GlobalBackbuffer, &GlobalBall);
+                
+                switch(GlobalGameStateEnum){
+                    case(SPLASH_SCREEN):
+                    ClearBackbuffer(&GlobalBackbuffer, 0x00202020);
+                    break;
+                    case(GAME):
+                    ClearBackbuffer(&GlobalBackbuffer, 0x00202020);
+                    DrawTileMap(&GlobalBackbuffer, grid);
+                    DrawBricks(&GlobalBackbuffer, BrickGrid);
+                    DrawPlayer(&GlobalBackbuffer, &GlobalPlayer);
+                    DrawBall(&GlobalBackbuffer, &GlobalBall);
+                    break;
+                    case(GAME_OVER):
+                    ClearBackbuffer(&GlobalBackbuffer, 0x00202020);
+                    break;
+                    default:
+                    break;
+                }
+                
                 
                 HDC DeviceContext = GetDC(Window);
                 win32_window_dimension Dimension = Win32GetWindowDimension(Window);
@@ -579,7 +626,19 @@ WinMain(HINSTANCE Instance,
                 ReleaseDC(Window, DeviceContext);
                 
                 // HUD
-                Win32DrawTextOverlayBottomLeft(Window, 20, 20, "START MENU", RGB(255, 255, 0));
+                switch(GlobalGameStateEnum) {
+                    case(SPLASH_SCREEN):
+                    Win32DrawTextOverlayBottomLeft(Window, 20, 20, "SPLASH SCREEN", RGB(255, 255, 0));
+                    break;
+                    case(GAME):
+                    Win32DrawTextOverlayBottomLeft(Window, 20, 20, "GAME", RGB(255, 255, 0));
+                    break;
+                    case(GAME_OVER):
+                    Win32DrawTextOverlayBottomLeft(Window, 20, 20, "GAMEOVER", RGB(255, 255, 0));
+                    break;
+                    default:
+                    break;
+                }
                 
             }
         }

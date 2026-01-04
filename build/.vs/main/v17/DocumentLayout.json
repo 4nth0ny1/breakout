@@ -6,7 +6,7 @@
       "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|main||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{5E1CEF41-3DEF-7A05-86FE-BDDB3DF1A841}|main.exe|c:\\code\\26_games\\breakout\\build\\main.exe||{B270807C-D8C6-49EB-8EBE-8E8D566637A1}|919d7fa1-9ce2-4d9f-896d-e7b38d47e562",
+      "AbsoluteMoniker": "D:0:0:{5E1CEF41-3DEF-7A05-86FE-BDDB3DF1A841}|main.exe|C:\\code\\26_games\\breakout\\build\\main.exe||{B270807C-D8C6-49EB-8EBE-8E8D566637A1}|919d7fa1-9ce2-4d9f-896d-e7b38d47e562",
       "RelativeMoniker": "D:0:0:{5E1CEF41-3DEF-7A05-86FE-BDDB3DF1A841}|main.exe|solutionrelative:main.exe||{B270807C-D8C6-49EB-8EBE-8E8D566637A1}|919d7fa1-9ce2-4d9f-896d-e7b38d47e562"
     }
   ],
@@ -27,9 +27,9 @@
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "main",
-              "DocumentMoniker": "c:\\code\\26_games\\breakout\\build\\main.exe",
+              "DocumentMoniker": "C:\\code\\26_games\\breakout\\build\\main.exe",
               "RelativeDocumentMoniker": "main.exe",
-              "ToolTip": "c:\\code\\26_games\\breakout\\build\\main.exe",
+              "ToolTip": "C:\\code\\26_games\\breakout\\build\\main.exe",
               "RelativeToolTip": "main.exe",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2026-01-03T20:29:32.757Z",
